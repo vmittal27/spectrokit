@@ -215,6 +215,7 @@ __marimo__/
 *.mp3
 *_songs.txt
 *.png
+*.json
 
 # anything else we don't want to track can be prepended with the following
 $$*
