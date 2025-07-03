@@ -3,7 +3,7 @@ import numpy as np
 
 __all__ = [
     'centroid_variance',
-    'bndwidth_mean',
+    'bandwidth_mean',
     'zcr_mean',
     'rms_variance',
     'rolloff_median'
