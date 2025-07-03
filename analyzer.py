@@ -30,11 +30,10 @@ def discover_analysis_functions():
             functions[name] = func
     return functions
 
-def process_file(audio_file: Path, functions: list[str], labels: list[str], duration: float, image_output: Path):
+def process_file(audio_file: Path, functions: list[str], labels: list[str], duration: float, image_output: Path) -> dict:
     """
     Process a single audio file and return analysis results.
     """
-    typer.echo(f"Processing: {audio_file}")
     waveform, sr = librosa.load(audio_file, sr=None, duration=duration)
     analysis_result = {}
     
@@ -44,8 +43,7 @@ def process_file(audio_file: Path, functions: list[str], labels: list[str], dura
             value = func(waveform, sr)
             analysis_result[funcname] = value
         except Exception as e:
-            typer.echo(f"Error running {funcname} on {audio_file.name}: {e}")
-            analysis_result[funcname] = None
+            raise RuntimeError(f"Error running function '{funcname}' on file '{audio_file}': {e}") from e
     
     if image_output is not None:
         visualize.save_spectrogram(
@@ -108,26 +106,28 @@ def analyze(
             raise typer.Exit(1)
 
     results = []
+    pbar = tqdm(total=len(audio_files), desc="Processing")
     with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = [
             executor.submit(process_file, audio_file, functions, labels, duration, image_output)
             for audio_file in audio_files
         ]
-        with tqdm(total=len(audio_files), desc="Processing") as pbar:
-            for f in as_completed(futures):
-                try:
-                    result = f.result()
-                    results.append(result)
-                except Exception as e:
-                    typer.echo(f"Error processing file: {e}")
-                pbar.update(1)
+        for f in as_completed(futures):
+            try:
+                result = f.result()
+                results.append(result)
+                pbar.write(f"Processed {result['file']}")
+            except Exception as e:
+                pbar.write(f"Error processing file: {e}")
+            pbar.update(1)
     
+    pbar.close()    
     typer.echo(f"Processed {len(results)} files.")
 
     with open(os.path.join(output, "results.json"), "w") as f:
         json.dump(results, f, indent=2)
-    
-    typer.echo(f"Analysis complete. Results saved to {output}")
+
+    typer.echo(f"Analysis complete. Results saved to '{output}'")
 
 if __name__ == "__main__":
     app()
