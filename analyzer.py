@@ -66,9 +66,9 @@ def process_file(audio_file: Path, functions: list[str], labels: list[str], dura
 @app.command()
 def analyze(
     input: Path = typer.Option(..., help="File or directory containing audio."),
-    functions: list[str] = typer.Option(..., help="List of analysis functions to run. Supported: " + ", ".join(features.__all__)),
+    functions: str = typer.Option(..., help="List of analysis functions to run as a single string, separated by spaces. Supported: " + ", ".join(features.__all__)),
     sample_size: int = typer.Option(None, help="Random sample size (optional)."),
-    labels: list[str] = typer.Option(None, help="List of labels matching input files"),
+    labels: str = typer.Option(None, help="List of labels matching input files as a single string, separated by spaces."),
     duration: float = typer.Option(None, help="Max duration in seconds to analyze."),
     output: Path = typer.Option("results.json", help="Where to write results."),
     image_output: Path = typer.Option(
@@ -90,6 +90,13 @@ def analyze(
     # apply sampling if needed
     if sample_size:
         audio_files = random.sample(audio_files, min(sample_size, len(audio_files)))
+
+    # split functions string into a list
+    functions = functions.split()
+
+    # split labels string into a list if provided
+    if labels:
+        labels = labels.split()
 
     # discover available functions from __all__
     available_funcs = discover_analysis_functions()
