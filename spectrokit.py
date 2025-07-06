@@ -1,3 +1,4 @@
+import statistics
 import typer
 from pathlib import Path
 import random
@@ -68,7 +69,7 @@ def analyze(
     sample_size: int = typer.Option(None, help="Random sample size (optional)."),
     labels: str = typer.Option(None, help="List of labels matching input files as a single string, separated by spaces."),
     duration: float = typer.Option(None, help="Max duration in seconds to analyze."),
-    output: Path = typer.Option("results.json", help="Where to write results."),
+    output: Path = typer.Option("./", help="Where to write results."),
     image_output: Path = typer.Option(
         None, 
         help="Where to store generated spectrograms for each audio file. If not provided, spectrograms will not be saved."
@@ -124,10 +125,25 @@ def analyze(
     pbar.close()    
     typer.echo(f"Processed {len(results)} files.")
 
-    with open(os.path.join(output, "results.json"), "w") as f:
+    with open(os.path.join(output, f"{'_'.join(labels)}-results.json"), "w") as f:
         json.dump(results, f, indent=2)
 
     typer.echo(f"Analysis complete. Results saved to '{output}'")
+
+    # calculate and print summary statistics
+    if results:
+        summary = {func: [] for func in functions}
+        for result in results:
+            for func, value in result['analysis'].items():
+                summary[func].append(value)
+
+        typer.echo("\nSummary Statistics:")
+        for func, values in summary.items():
+            if values:
+                mean_value = sum(values) / len(values)
+                typer.echo(f"{func}: Mean = {mean_value:.4f}, Standard Deviation = {statistics.stdev(values):.4f}, Count = {len(values)}")
+            else:
+                typer.echo(f"{func}: No data available")
 
 if __name__ == "__main__":
     app()
