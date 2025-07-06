@@ -74,7 +74,8 @@ def analyze(
         None, 
         help="Where to store generated spectrograms for each audio file. If not provided, spectrograms will not be saved."
     ),
-    workers: int = typer.Option(None, help="Number of parallel workers to use for processing. Defaults to number of CPU cores.")
+    workers: int = typer.Option(None, help="Number of parallel workers to use for processing. Defaults to number of CPU cores."),
+    seed: int = typer.Option(None, help="Random seed for reproducibility. If not provided, a random seed will be used.")
 ):
     # discover files
     if input.is_file():
@@ -85,6 +86,10 @@ def analyze(
     if not audio_files:
         typer.echo("No audio files found.")
         raise typer.Exit(1)
+    
+    if seed is not None:
+        random.seed(seed)
+        typer.echo(f"Using random seed: {seed}")
 
     # apply sampling if needed
     if sample_size:
