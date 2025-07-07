@@ -3,12 +3,17 @@ import typer
 from pathlib import Path
 import random
 import json
+import os
+
+# enable caching for librosa
+os.environ["LIBROSA_CACHE_DIR"] = "tmp/librosa_cache"
+
 import librosa
 import features
 import visualize
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
-import os
+
 
 app = typer.Typer()
 
@@ -42,7 +47,7 @@ def process_file(audio_file: Path, functions: list[str], labels: list[str], dura
         try:
             func = getattr(features, funcname)
             value = func(waveform, sr)
-            analysis_result[funcname] = value
+            analysis_result[funcname] = float(value)
         except Exception as e:
             raise RuntimeError(f"Error running function '{funcname}' on file '{audio_file}': {e}") from e
     
@@ -126,8 +131,7 @@ def analyze(
             except Exception as e:
                 pbar.write(f"Error processing file: {e}")
             pbar.update(1)
-    
-    pbar.close()    
+    pbar.close()
     typer.echo(f"Processed {len(results)} files.")
 
     with open(os.path.join(output, f"{'_'.join(labels)}-results.json"), "w") as f:
@@ -149,6 +153,9 @@ def analyze(
                 typer.echo(f"{func}: Mean = {mean_value:.4f}, Standard Deviation = {statistics.stdev(values):.4f}, Count = {len(values)}")
             else:
                 typer.echo(f"{func}: No data available")
+    # clear cache
+    librosa.cache.clear()
+    
 
 if __name__ == "__main__":
     app()
